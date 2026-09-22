@@ -4,9 +4,9 @@ import {
   FileText,
   Users,
   MessageSquare,
-  DollarSign,
+  Mail,
+  Bed,
   Radio,
-  BarChart3,
   Settings,
   Menu,
   Crown,
@@ -14,6 +14,7 @@ import {
   Shield,
   Star
 } from 'lucide-react';
+import { NairaIcon } from '../icons/NairaIcon';
 
 interface SidebarProps {
   onTabChange: (tab: string) => void;
@@ -56,9 +57,10 @@ export function Sidebar({  onTabChange, collapsed, onToggleCollapse, userRole }:
     { id: 'content', label: 'Content', icon: FileText, path: '/content' },
     { id: 'members', label: 'Members', icon: Users, path: '/members' },
     { id: 'testimonials', label: 'Testimonials', icon: MessageSquare, path: '/testimonials' },
-    { id: 'donations', label: 'Donations', icon: DollarSign, path: '/donations' },
+    { id: 'donations', label: 'Donations', icon: NairaIcon, path: '/donations' },
+    { id: 'contacts', label: 'Contacts', icon: Mail, path: '/contacts' },
+    { id: 'accommodations', label: 'Accommodations', icon: Bed, path: '/accommodations' },
     { id: 'livestream', label: 'Live Stream', icon: Radio, path: '/livestream' },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics' },
     { id: 'settings', label: 'Settings', icon: Settings, path: '/settings' },
   ];
 

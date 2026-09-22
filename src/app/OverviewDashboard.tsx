@@ -1,8 +1,8 @@
 import React from 'react';
-import { MetricsCards } from '../dashboard/MetricsCards';
-import { QuickActions } from '../dashboard/QuickActions';
-import { RecentActivity } from '../dashboard/RecentActivity';
-import { Charts } from '../dashboard/Charts';
+import { MetricsCards } from '../components/dashboard/MetricsCards';
+import { QuickActions } from '../components/dashboard/QuickActions';
+import { RecentActivity } from '../components/dashboard/RecentActivity';
+import { Charts } from '../components/dashboard/Charts';
 
 export function OverviewDashboard() {
   return (

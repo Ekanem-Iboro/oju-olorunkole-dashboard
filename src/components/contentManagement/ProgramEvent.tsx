@@ -146,6 +146,8 @@ export default function ProgramEventPage() {
                                 <tr>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-[#6B7280] uppercase tracking-wider">Title</th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-[#6B7280] uppercase tracking-wider">Type</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-[#6B7280] uppercase tracking-wider">Location</th>
+                                    <th className="px-6 py-3 text-left text-xs font-semibold text-[#6B7280] uppercase tracking-wider">Day & Time</th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-[#6B7280] uppercase tracking-wider">Categories</th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-[#6B7280] uppercase tracking-wider">Status</th>
                                     <th className="px-6 py-3 text-left text-xs font-semibold text-[#6B7280] uppercase tracking-wider">Created</th>
@@ -178,6 +180,12 @@ export default function ProgramEventPage() {
                                             <span className="inline-block px-3 py-1 rounded-full text-xs font-medium bg-[#E0F2FE] text-[#0369A1]">
                                                 {formatProgramType(program.program_type)}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-[#6B7280]">
+                                            {program.location || '-'}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-[#6B7280]">
+                                            {program.dayandtime || '-'}
                                         </td>
                                         <td className="px-6 py-4 text-sm">
                                             <div className="flex flex-wrap gap-1">

@@ -10,6 +10,8 @@ interface EventFormData {
   categories: string;
   program_type: string;
   status: string;
+  location: string;
+  dayandtime: string;
   image?: FileList;
 }
 
@@ -107,6 +109,8 @@ export function AddProgramModal({ isOpen, onClose }: AddProgramModalProps) {
         categories: data.categories,
         program_type: data.program_type,
         status: data.status,
+        location: data.location,
+        dayandtime: data.dayandtime,
         image_url: uploadedImageUrl
       };
 
@@ -243,6 +247,34 @@ export function AddProgramModal({ isOpen, onClose }: AddProgramModalProps) {
               <p className="text-[#EF4444] text-sm mt-1">{errors.categories.message}</p>
             )}
             <p className="text-[#6B7280] text-xs mt-1">Separate multiple categories with commas</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-[#374151] mb-2">
+                Location
+              </label>
+              <input
+                type="text"
+                {...register('location')}
+                className="w-full px-4 py-2 border border-[#E2E8F0] rounded-lg focus:ring-2 focus:ring-[#22C55E] focus:border-transparent outline-none transition-all"
+                placeholder="e.g., Main Auditorium, Online via Zoom"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-[#374151] mb-2">
+                Day & Time
+              </label>
+              <input
+                type="text"
+                {...register('dayandtime')}
+                className="w-full px-4 py-2 border border-[#E2E8F0] rounded-lg focus:ring-2 focus:ring-[#22C55E] focus:border-transparent outline-none transition-all"
+                placeholder="e.g., Every Sunday, 9:00 AM - 11:00 AM"
+                disabled={isLoading}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

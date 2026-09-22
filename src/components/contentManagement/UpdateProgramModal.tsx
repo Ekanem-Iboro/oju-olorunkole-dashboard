@@ -11,6 +11,8 @@ interface EventFormData {
   categories: string;
   program_type: string;
   status: string;
+  location: string;
+  dayandtime: string;
   image?: FileList;
 }
 
@@ -106,6 +108,8 @@ export function UpdateProgramModal({ isOpen, onClose, programId }: UpdateProgram
       setValue('categories', program.categories);
       setValue('program_type', program.program_type || 'event');
       setValue('status', program.status || 'active');
+      setValue('location', program.location || '');
+      setValue('dayandtime', program.dayandtime || '');
       setImagePreview(program.image_url);
       setUploadedImageUrl(program.image_url);
     }
@@ -124,7 +128,7 @@ export function UpdateProgramModal({ isOpen, onClose, programId }: UpdateProgram
         0: file,
         length: 1,
         item: (index: number) => index === 0 ? file : null
-      } as any;
+      } as unknown as FileList;
 
       setValue('image', fileList);
 
@@ -142,7 +146,7 @@ export function UpdateProgramModal({ isOpen, onClose, programId }: UpdateProgram
     } else {
       setImagePreview('');
       setUploadedImageUrl(program?.image_url || '');
-      setValue('image', undefined as any);
+      setValue('image', undefined);
     }
   };
 
@@ -157,6 +161,8 @@ export function UpdateProgramModal({ isOpen, onClose, programId }: UpdateProgram
         categories: data.categories,
         program_type: data.program_type,
         status: data.status,
+        location: data.location,
+        dayandtime: data.dayandtime,
         image_url: uploadedImageUrl || program?.image_url
       };
 
@@ -300,6 +306,34 @@ export function UpdateProgramModal({ isOpen, onClose, programId }: UpdateProgram
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-[#374151] mb-2">
+                  Location
+                </label>
+                <input
+                  type="text"
+                  {...register('location')}
+                  className="w-full px-4 py-2 border border-[#E2E8F0] rounded-lg focus:ring-2 focus:ring-[#22C55E] focus:border-transparent outline-none transition-all"
+                  placeholder="e.g., Main Auditorium, Online via Zoom"
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-[#374151] mb-2">
+                  Day & Time
+                </label>
+                <input
+                  type="text"
+                  {...register('dayandtime')}
+                  className="w-full px-4 py-2 border border-[#E2E8F0] rounded-lg focus:ring-2 focus:ring-[#22C55E] focus:border-transparent outline-none transition-all"
+                  placeholder="e.g., Every Sunday, 9:00 AM - 11:00 AM"
+                  disabled={isLoading}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-[#F8FAFC] p-3 rounded-lg">
                 <div className="text-sm font-medium text-[#374151] mb-1">Current Status</div>
                 <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getStatusBadgeClass(status)}`}>
@@ -357,7 +391,7 @@ export function UpdateProgramModal({ isOpen, onClose, programId }: UpdateProgram
                 {imagePreview && imagePreview !== program?.image_url && (
                   <div className="relative w-20 h-20 rounded-lg overflow-hidden border-2 border-[#22C55E]">
                     <img
-                      src={'https://oju-api.onrender.com' + imagePreview}
+                      src={imagePreview}
                       alt="Preview"
                       className="w-full h-full object-cover"
                     />

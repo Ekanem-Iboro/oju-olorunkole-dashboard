@@ -1,6 +1,7 @@
 import React from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from '../layout/Sidebar';
+import { Loader } from 'lucide-react';
 
 interface DashboardLayoutProps {
   onLogout: () => void;
@@ -10,8 +11,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) =>
   const location = useLocation();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = React.useState(false);
+  const [isLoggingOut, setIsLoggingOut] = React.useState(false);
 
-  // Extract current tab from URL path
   const getCurrentTabFromPath = () => {
     const path = location.pathname;
     if (path === '/dashboard' || path === '/') return 'dashboard';
@@ -20,7 +21,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) =>
 
   const [activeTab, setActiveTab] = React.useState(getCurrentTabFromPath());
 
-  // Update active tab when route changes
   React.useEffect(() => {
     setActiveTab(getCurrentTabFromPath());
   }, [location.pathname]);
@@ -30,13 +30,33 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) =>
     navigate(`/${tab === 'dashboard' ? 'dashboard' : tab}`);
   };
 
-  // Mock user data - you might want to fetch this from your API
+  const handleLogout = () => {
+    setIsLoggingOut(true);
+    localStorage.removeItem('access_token');
+    onLogout();
+    setTimeout(() => {
+      navigate('/login');
+    }, 3000);
+  };
+
   const mockUser = {
     id: '1',
     email: 'admin@church.com',
     name: 'Church Admin',
     role: 'super_admin' as const
   };
+
+  if (isLoggingOut) {
+    return (
+      <div className="flex h-screen bg-gray-50 items-center justify-center">
+        <div className="text-center">
+          <Loader className="animate-spin text-[#22C55E] mx-auto mb-4" size={40} />
+          <p className="text-[#374151] font-medium">Logging out...</p>
+          <p className="text-[#6B7280] text-sm mt-1">Redirecting to login</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -47,9 +67,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) =>
         userRole={mockUser.role}
       />
 
-      {/* Main content area */}
       <main className="flex-1 flex flex-col overflow-hidden">
-        {/* Header */}
         <header className="bg-white shadow-sm border-b">
           <div className="flex items-center justify-between px-6 py-4">
             <div>
@@ -67,7 +85,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) =>
                 <p className="text-sm text-gray-600">{mockUser.email}</p>
               </div>
               <button
-                onClick={onLogout}
+                onClick={handleLogout}
                 className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
               >
                 Logout
@@ -76,7 +94,6 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) =>
           </div>
         </header>
 
-        {/* Page content - Outlet renders the child routes */}
         <div className="flex-1 overflow-auto p-6">
           <Outlet />
         </div>
@@ -84,16 +101,3 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onLogout }) =>
     </div>
   );
 };
-
-
-
-{/* <div className="flex-1 flex flex-col overflow-hidden">
-        <Header
-          user={user}
-          onLogout={onLogout}
-          onToggleSidebar={() => setSidebarCollapsed(!sidebarCollapsed)}
-        />
-         */}
-
-// const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-// 
