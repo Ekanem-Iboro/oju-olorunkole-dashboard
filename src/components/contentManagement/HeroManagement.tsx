@@ -1,16 +1,38 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Eye, Loader, Image } from 'lucide-react';
+import { Plus, Trash2, Eye, Loader, Image, Upload } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useGetHeroSlides } from '../../../api/query';
-import { useDeleteHeroSlide, useAddHeroSlide } from '../../../api/mutate';
+import { useDeleteHeroSlide, useAddHeroSlide, useUploadImage } from '../../../api/mutate';
+
+interface HeroSlide {
+  id: number;
+  title: string;
+  subtitle?: string | null;
+  image_url?: string | null;
+  status?: string;
+  cta_text?: string | null;
+  cta_link?: string | null;
+}
+
+const getErrorMessage = (err: unknown, fallback: string) => {
+  if (err && typeof err === 'object' && 'response' in err) {
+    const response = (err as { response?: { data?: { message?: string } } }).response;
+    if (response?.data?.message) return response.data.message;
+  }
+  return err instanceof Error ? err.message : fallback;
+};
 
 export function HeroManager() {
-  const [selectedSlide, setSelectedSlide] = useState<any>(null);
+  const [selectedSlide, setSelectedSlide] = useState<HeroSlide | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newSlide, setNewSlide] = useState({ title: '', subtitle: '', image_url: '', button_text: '', button_link: '' });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState('');
 
   const { data: slidesData, isLoading, refetch } = useGetHeroSlides();
   const deleteMutation = useDeleteHeroSlide();
   const addMutation = useAddHeroSlide();
+  const uploadMutation = useUploadImage();
 
   const slides = Array.isArray(slidesData) ? slidesData : slidesData?.slides || [];
 
@@ -25,22 +47,51 @@ export function HeroManager() {
     }
   };
 
+  const resetForm = () => {
+    setNewSlide({ title: '', subtitle: '', image_url: '', button_text: '', button_link: '' });
+    setImageFile(null);
+    setImagePreview('');
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImageFile(file);
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    setImagePreview(URL.createObjectURL(file));
+  };
+
   const handleDelete = (id: number) => {
     if (window.confirm('Are you sure you want to delete this slide?')) {
-      deleteMutation.mutate(id);
-      setSelectedSlide(null);
+      deleteMutation.mutate(id, {
+        onSuccess: () => {
+          toast.success('Slide deleted successfully');
+          setSelectedSlide(null);
+        },
+        onError: (error) => {
+          toast.error(getErrorMessage(error, 'Failed to delete slide'));
+        },
+      });
     }
   };
 
-  const handleAddSlide = () => {
-    if (!newSlide.title || !newSlide.image_url) return;
-    addMutation.mutate(newSlide, {
-      onSuccess: () => {
-        setIsAddModalOpen(false);
-        setNewSlide({ title: '', subtitle: '', image_url: '', button_text: '', button_link: '' });
-        refetch();
+  const handleAddSlide = async () => {
+    if (!newSlide.title || !imageFile) return;
+    try {
+      const uploaded = await uploadMutation.mutateAsync(imageFile);
+      const image_url = uploaded?.image_url || uploaded?.url || uploaded?.path;
+      if (!image_url) {
+        toast.error('Upload succeeded but no image URL was returned');
+        return;
       }
-    });
+      await addMutation.mutateAsync({ ...newSlide, image_url });
+      toast.success('Slide added successfully');
+      setIsAddModalOpen(false);
+      resetForm();
+      refetch();
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to add slide'));
+    }
   };
 
   if (isLoading) {
@@ -71,7 +122,7 @@ export function HeroManager() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {slides.map((slide: any) => (
+          {slides.map((slide: HeroSlide) => (
             <div key={slide.id} className="bg-white rounded-lg shadow-sm border border-[#E2E8F0] overflow-hidden">
               <div className="aspect-video bg-gray-200 relative">
                 {slide.image_url ? (
@@ -95,8 +146,8 @@ export function HeroManager() {
 
               <div className="p-4">
                 <div className="flex items-center justify-between">
-                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(slide.status)}`}>
-                    {slide.status?.charAt(0).toUpperCase() + slide.status?.slice(1) || 'Draft'}
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusBadge(slide.status || '')}`}>
+                    {(slide.status?.charAt(0).toUpperCase() ?? 'D') + (slide.status?.slice(1) || 'raft')}
                   </span>
                   <div className="flex space-x-2">
                     <button
@@ -131,7 +182,7 @@ export function HeroManager() {
             )}
             <div className="space-y-2">
               <div><span className="text-xs text-[#6B7280] uppercase">Subtitle:</span><p className="text-[#374151]">{selectedSlide.subtitle || 'N/A'}</p></div>
-              <div><span className="text-xs text-[#6B7280] uppercase">Status:</span><p><span className={`px-2 py-1 text-xs rounded-full ${getStatusBadge(selectedSlide.status)}`}>{selectedSlide.status}</span></p></div>
+              <div><span className="text-xs text-[#6B7280] uppercase">Status:</span><p><span className={`px-2 py-1 text-xs rounded-full ${getStatusBadge(selectedSlide.status || '')}`}>{selectedSlide.status}</span></p></div>
               {selectedSlide.cta_text && <div><span className="text-xs text-[#6B7280] uppercase">CTA:</span><p className="text-[#374151]">{selectedSlide.cta_text}</p></div>}
               {selectedSlide.cta_link && <div><span className="text-xs text-[#6B7280] uppercase">CTA Link:</span><p className="text-[#374151]">{selectedSlide.cta_link}</p></div>}
             </div>
@@ -168,14 +219,34 @@ export function HeroManager() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-[#374151] mb-1">Image URL *</label>
-                <input
-                  type="text"
-                  value={newSlide.image_url}
-                  onChange={(e) => setNewSlide({ ...newSlide, image_url: e.target.value })}
-                  className="w-full px-3 py-2 border border-[#E2E8F0] rounded-lg focus:ring-2 focus:ring-[#22C55E] focus:border-transparent outline-none"
-                  placeholder="https://example.com/image.jpg"
-                />
+                <label className="block text-sm font-medium text-[#374151] mb-1">Image *</label>
+                <div className="border-2 border-dashed border-[#E2E8F0] rounded-lg p-4 text-center hover:border-[#22C55E] transition-colors">
+                  <Upload className="h-8 w-8 mx-auto mb-2 text-[#9CA3AF]" />
+                  <p className="text-sm text-[#6B7280] mb-2">Upload a slide image</p>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="hidden"
+                    id="hero-slide-image"
+                  />
+                  <label
+                    htmlFor="hero-slide-image"
+                    className="inline-block px-4 py-2 bg-[#22C55E] text-white rounded-lg hover:bg-[#16A34A] cursor-pointer transition-colors text-sm font-medium"
+                  >
+                    Choose Image
+                  </label>
+                  {imageFile && (
+                    <p className="mt-2 text-xs text-[#374151]">{imageFile.name}</p>
+                  )}
+                </div>
+                {imagePreview && (
+                  <img
+                    src={imagePreview}
+                    alt="Slide preview"
+                    className="mt-3 w-full h-40 object-cover rounded-lg border border-[#E2E8F0]"
+                  />
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-[#374151] mb-1">Button Text</label>
@@ -206,11 +277,19 @@ export function HeroManager() {
                 </button>
                 <button
                   onClick={handleAddSlide}
-                  disabled={!newSlide.title || !newSlide.image_url || addMutation.isPending}
+                  disabled={!newSlide.title || !imageFile || addMutation.isPending || uploadMutation.isPending}
                   className="px-4 py-2 bg-[#22C55E] text-white rounded-lg hover:bg-[#16A34A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                 >
-                  {addMutation.isPending && <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>}
-                  <span>{addMutation.isPending ? 'Adding...' : 'Add Slide'}</span>
+                  {(addMutation.isPending || uploadMutation.isPending) && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  )}
+                  <span>
+                    {uploadMutation.isPending
+                      ? 'Uploading...'
+                      : addMutation.isPending
+                        ? 'Adding...'
+                        : 'Add Slide'}
+                  </span>
                 </button>
               </div>
             </div>
