@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Newspaper, ChevronDown, Star } from 'lucide-react';
+import { Plus, Edit2, Trash2, Newspaper, ChevronDown, Star, Loader } from 'lucide-react';
 import { useGetNews } from '../../../api/query';
 import { useDeleteNews } from '../../../api/mutate';
 import { AddNewsModal } from './AddNewsModal';
@@ -24,7 +24,11 @@ export default function NewsManagement() {
     const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title'>('newest');
 
     const { data: newsData, isLoading, refetch } = useGetNews();
-    const { mutate: deleteNews, isPending: isDeleting } = useDeleteNews();
+    const {
+        mutate: deleteNews,
+        isPending: isDeleting,
+        variables: deletingNewsId,
+    } = useDeleteNews();
 
     const handleDeleteNews = (id: number) => {
         if (window.confirm('Are you sure you want to delete this news article?')) {
@@ -200,7 +204,11 @@ export default function NewsManagement() {
                                                     className="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                     title="Delete news"
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    {isDeleting && deletingNewsId === item.id ? (
+                                                        <Loader className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <Trash2 className="h-4 w-4" />
+                                                    )}
                                                 </button>
                                             </div>
                                         </td>

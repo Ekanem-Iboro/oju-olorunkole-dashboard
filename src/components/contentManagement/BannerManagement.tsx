@@ -320,10 +320,15 @@ export function BannerManager() {
                                         </button>
                                         <button
                                             onClick={() => handleDelete(banner.id)}
-                                            className="text-[#EF4444] hover:text-[#DC2626] p-1 transition-colors"
+                                            disabled={deleteMutation.isPending}
+                                            className="text-[#EF4444] hover:text-[#DC2626] p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                             title="Delete banner"
                                         >
-                                            <Trash2 className="h-4 w-4" />
+                                            {deleteMutation.isPending && deleteMutation.variables === banner.id ? (
+                                                <Loader className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Trash2 className="h-4 w-4" />
+                                            )}
                                         </button>
                                     </div>
                                 </div>

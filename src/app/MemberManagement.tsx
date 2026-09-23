@@ -37,8 +37,9 @@ export function MemberManagement() {
 
   const handleDelete = (id: number) => {
     if (window.confirm('Are you sure you want to delete this member?')) {
-      deleteMutation.mutate(id);
-      setSelectedMember(null);
+      deleteMutation.mutate(id, {
+        onSuccess: () => setSelectedMember(null),
+      });
     }
   };
 
@@ -168,9 +169,15 @@ export function MemberManagement() {
                             </button>
                             <button
                               onClick={() => handleDelete(member.id)}
-                              className="text-[#EF4444] hover:text-[#DC2626] p-1 transition-colors"
+                              disabled={deleteMutation.isPending}
+                              className="text-[#EF4444] hover:text-[#DC2626] p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Delete member"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              {deleteMutation.isPending && deleteMutation.variables === member.id ? (
+                                <Loader className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
                             </button>
                           </div>
                         </td>
@@ -195,10 +202,19 @@ export function MemberManagement() {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleDelete(selectedMember.id)}
-                    className="bg-[#EF4444] text-white px-3 py-1.5 rounded-lg hover:bg-[#DC2626] flex items-center space-x-1 text-sm transition-colors"
+                    disabled={deleteMutation.isPending}
+                    className="bg-[#EF4444] text-white px-3 py-1.5 rounded-lg hover:bg-[#DC2626] flex items-center space-x-1 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Trash2 className="h-4 w-4" />
-                    <span>Delete</span>
+                    {deleteMutation.isPending && deleteMutation.variables === selectedMember.id ? (
+                      <Loader className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    <span>
+                      {deleteMutation.isPending && deleteMutation.variables === selectedMember.id
+                        ? 'Deleting...'
+                        : 'Delete'}
+                    </span>
                   </button>
                   <button
                     onClick={() => setSelectedMember(null)}

@@ -1,6 +1,6 @@
 // pages/program-event.tsx
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Calendar, ChevronDown } from 'lucide-react';
+import { Plus, Edit2, Trash2, Calendar, ChevronDown, Loader } from 'lucide-react';
 import { useGetPrograms } from '../../../api/query';
 import { useDeleteProgram } from '../../../api/mutate';
 import { AddProgramModal } from './AddProgramModal';
@@ -13,7 +13,11 @@ export default function ProgramEventPage() {
     const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title'>('newest');
 
     const { data: programs, isLoading, refetch } = useGetPrograms();
-    const { mutate: deleteProgram, isPending: isDeleting } = useDeleteProgram();
+    const {
+        mutate: deleteProgram,
+        isPending: isDeleting,
+        variables: deletingProgramId,
+    } = useDeleteProgram();
 
     const handleDeleteProgram = (programId: number) => {
         deleteProgram(programId); // Pass the ID directly here
@@ -230,7 +234,11 @@ export default function ProgramEventPage() {
                                                     className="text-red-600 hover:text-red-800 hover:bg-red-50 p-2 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                                     title="Delete program"
                                                 >
-                                                    <Trash2 className="h-4 w-4" />
+                                                    {isDeleting && deletingProgramId === program.id ? (
+                                                        <Loader className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <Trash2 className="h-4 w-4" />
+                                                    )}
                                                 </button>
                                             </div>
                                         </td>

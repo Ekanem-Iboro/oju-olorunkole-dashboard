@@ -34,13 +34,15 @@ export function TestimonyManagement() {
   };
 
   const handleApprove = (id: number) => {
-    approveMutation.mutate(id);
-    setSelectedTestimony(null);
+    approveMutation.mutate(id, {
+      onSuccess: () => setSelectedTestimony(null),
+    });
   };
 
   const handleReject = (id: number) => {
-    rejectMutation.mutate(id);
-    setSelectedTestimony(null);
+    rejectMutation.mutate(id, {
+      onSuccess: () => setSelectedTestimony(null),
+    });
   };
 
   const handleFeature = (id: number) => {
@@ -49,8 +51,9 @@ export function TestimonyManagement() {
 
   const handleDelete = (id: number) => {
     if (window.confirm('Are you sure you want to delete this testimony?')) {
-      deleteMutation.mutate(id);
-      setSelectedTestimony(null);
+      deleteMutation.mutate(id, {
+        onSuccess: () => setSelectedTestimony(null),
+      });
     }
   };
 
@@ -123,19 +126,35 @@ export function TestimonyManagement() {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleApprove(testimony.id)}
-                    disabled={approveMutation.isPending}
-                    className="bg-[#22C55E] text-white px-4 py-2 rounded-lg hover:bg-[#16A34A] flex items-center space-x-2 transition-colors disabled:opacity-50"
+                    disabled={approveMutation.isPending || rejectMutation.isPending}
+                    className="bg-[#22C55E] text-white px-4 py-2 rounded-lg hover:bg-[#16A34A] flex items-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <CheckCircle className="h-4 w-4" />
-                    <span>Approve</span>
+                    {approveMutation.isPending && approveMutation.variables === testimony.id ? (
+                      <Loader className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle className="h-4 w-4" />
+                    )}
+                    <span>
+                      {approveMutation.isPending && approveMutation.variables === testimony.id
+                        ? 'Approving...'
+                        : 'Approve'}
+                    </span>
                   </button>
                   <button
                     onClick={() => handleReject(testimony.id)}
-                    disabled={rejectMutation.isPending}
-                    className="bg-[#EF4444] text-white px-4 py-2 rounded-lg hover:bg-[#DC2626] flex items-center space-x-2 transition-colors disabled:opacity-50"
+                    disabled={approveMutation.isPending || rejectMutation.isPending}
+                    className="bg-[#EF4444] text-white px-4 py-2 rounded-lg hover:bg-[#DC2626] flex items-center space-x-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <X className="h-4 w-4" />
-                    <span>Reject</span>
+                    {rejectMutation.isPending && rejectMutation.variables === testimony.id ? (
+                      <Loader className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <X className="h-4 w-4" />
+                    )}
+                    <span>
+                      {rejectMutation.isPending && rejectMutation.variables === testimony.id
+                        ? 'Rejecting...'
+                        : 'Reject'}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -200,16 +219,26 @@ export function TestimonyManagement() {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleFeature(testimony.id)}
-                    className={`p-1 transition-colors ${testimony.is_featured ? 'text-[#F59E0B]' : 'text-[#6B7280] hover:text-[#F59E0B]'}`}
+                    disabled={featureMutation.isPending || deleteMutation.isPending}
+                    className={`p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${testimony.is_featured ? 'text-[#F59E0B]' : 'text-[#6B7280] hover:text-[#F59E0B]'}`}
                     title={testimony.is_featured ? 'Unfeature' : 'Feature'}
                   >
-                    <Star className="h-4 w-4" />
+                    {featureMutation.isPending && featureMutation.variables === testimony.id ? (
+                      <Loader className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Star className="h-4 w-4" />
+                    )}
                   </button>
                   <button
                     onClick={() => handleDelete(testimony.id)}
-                    className="text-[#EF4444] hover:text-[#DC2626] p-1 transition-colors"
+                    disabled={featureMutation.isPending || deleteMutation.isPending}
+                    className="text-[#EF4444] hover:text-[#DC2626] p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <X className="h-4 w-4" />
+                    {deleteMutation.isPending && deleteMutation.variables === testimony.id ? (
+                      <Loader className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <X className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -247,13 +276,37 @@ export function TestimonyManagement() {
           </div>
           {selectedTestimony.status === 'pending' && (
             <div className="flex space-x-2 pt-4 border-t border-[#E2E8F0]">
-              <button onClick={() => handleApprove(selectedTestimony.id)} className="bg-[#22C55E] text-white px-4 py-2 rounded-lg hover:bg-[#16A34A] flex items-center space-x-2">
-                <CheckCircle className="h-4 w-4" />
-                <span>Approve</span>
+              <button
+                onClick={() => handleApprove(selectedTestimony.id)}
+                disabled={approveMutation.isPending || rejectMutation.isPending}
+                className="bg-[#22C55E] text-white px-4 py-2 rounded-lg hover:bg-[#16A34A] flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {approveMutation.isPending && approveMutation.variables === selectedTestimony.id ? (
+                  <Loader className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4" />
+                )}
+                <span>
+                  {approveMutation.isPending && approveMutation.variables === selectedTestimony.id
+                    ? 'Approving...'
+                    : 'Approve'}
+                </span>
               </button>
-              <button onClick={() => handleReject(selectedTestimony.id)} className="bg-[#EF4444] text-white px-4 py-2 rounded-lg hover:bg-[#DC2626] flex items-center space-x-2">
-                <X className="h-4 w-4" />
-                <span>Reject</span>
+              <button
+                onClick={() => handleReject(selectedTestimony.id)}
+                disabled={approveMutation.isPending || rejectMutation.isPending}
+                className="bg-[#EF4444] text-white px-4 py-2 rounded-lg hover:bg-[#DC2626] flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {rejectMutation.isPending && rejectMutation.variables === selectedTestimony.id ? (
+                  <Loader className="h-4 w-4 animate-spin" />
+                ) : (
+                  <X className="h-4 w-4" />
+                )}
+                <span>
+                  {rejectMutation.isPending && rejectMutation.variables === selectedTestimony.id
+                    ? 'Rejecting...'
+                    : 'Reject'}
+                </span>
               </button>
             </div>
           )}

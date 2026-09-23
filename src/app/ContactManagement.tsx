@@ -62,8 +62,11 @@ export function ContactManagement() {
 
   const handleDelete = (id: number) => {
     if (window.confirm('Are you sure you want to delete this contact message?')) {
-      deleteMutation.mutate(id);
-      if (selectedContact?.id === id) setSelectedContact(null);
+      deleteMutation.mutate(id, {
+        onSuccess: () => {
+          if (selectedContact?.id === id) setSelectedContact(null);
+        },
+      });
     }
   };
 
@@ -215,10 +218,19 @@ export function ContactManagement() {
                 <div className="flex space-x-2">
                   <button
                     onClick={() => handleDelete(selectedContact.id)}
-                    className="bg-[#EF4444] text-white px-3 py-1.5 rounded-lg hover:bg-[#DC2626] flex items-center space-x-1 text-sm transition-colors"
+                    disabled={deleteMutation.isPending}
+                    className="bg-[#EF4444] text-white px-3 py-1.5 rounded-lg hover:bg-[#DC2626] flex items-center space-x-1 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <Trash2 className="h-4 w-4" />
-                    <span>Delete</span>
+                    {deleteMutation.isPending && deleteMutation.variables === selectedContact.id ? (
+                      <Loader className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    <span>
+                      {deleteMutation.isPending && deleteMutation.variables === selectedContact.id
+                        ? 'Deleting...'
+                        : 'Delete'}
+                    </span>
                   </button>
                   <button
                     onClick={() => setSelectedContact(null)}

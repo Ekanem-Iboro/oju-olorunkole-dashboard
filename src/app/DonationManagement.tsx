@@ -29,8 +29,12 @@ export function DonationManagement() {
   };
 
   const handleStatusChange = (id: number, status: string) => {
-    updateStatusMutation.mutate({ id, status });
-    setSelectedDonation(null);
+    updateStatusMutation.mutate(
+      { id, status },
+      {
+        onSuccess: () => setSelectedDonation(null),
+      }
+    );
   };
 
   if (isLoading) {
@@ -192,21 +196,34 @@ export function DonationManagement() {
             <div className="mt-6 pt-4 border-t border-[#E2E8F0]">
               <label className="text-xs font-medium text-[#6B7280] uppercase mb-2 block">Update Status</label>
               <div className="flex space-x-2">
-                {['pending', 'completed', 'failed'].map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => handleStatusChange(selectedDonation.id, status)}
-                    disabled={(selectedDonation.payment_status || selectedDonation.status) === status}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors ${
-                      (selectedDonation.payment_status || selectedDonation.status) === status
-                        ? `${getStatusBadge(status)} cursor-default`
-                        : 'bg-[#F8FAFC] text-[#6B7280] hover:bg-[#E2E8F0]'
-                    }`}
-                  >
-                    {status}
-                  </button>
-                ))}
+                {['pending', 'completed', 'failed'].map((status) => {
+                  const isCurrent = (selectedDonation.payment_status || selectedDonation.status) === status;
+                  const isUpdating =
+                    updateStatusMutation.isPending &&
+                    updateStatusMutation.variables?.status === status;
+                  return (
+                    <button
+                      key={status}
+                      onClick={() => handleStatusChange(selectedDonation.id, status)}
+                      disabled={isCurrent || updateStatusMutation.isPending}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium capitalize transition-colors flex items-center space-x-1 ${
+                        isCurrent
+                          ? `${getStatusBadge(status)} cursor-default`
+                          : 'bg-[#F8FAFC] text-[#6B7280] hover:bg-[#E2E8F0] disabled:opacity-50 disabled:cursor-not-allowed'
+                      }`}
+                    >
+                      {isUpdating && <Loader className="h-3.5 w-3.5 animate-spin" />}
+                      <span>{status}</span>
+                    </button>
+                  );
+                })}
               </div>
+              {updateStatusMutation.isPending && (
+                <p className="mt-2 text-xs text-[#6B7280] flex items-center space-x-1">
+                  <Loader className="h-3 w-3 animate-spin" />
+                  <span>Saving status...</span>
+                </p>
+              )}
             </div>
           </div>
         </div>

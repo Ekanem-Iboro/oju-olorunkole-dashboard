@@ -1,7 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Bed, CheckCircle, XCircle, Clock, Trash2, Eye, Loader } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { useGetAccommodations } from '../../api/query';
 import { useUpdateAccommodationStatus, useDeleteAccommodation } from '../../api/mutate';
+
+const getErrorMessage = (err: unknown, fallback: string) => {
+  if (err && typeof err === 'object' && 'response' in err) {
+    const response = (err as { response?: { data?: { message?: string } } }).response;
+    if (response?.data?.message) return response.data.message;
+  }
+  return err instanceof Error ? err.message : fallback;
+};
 
 export function AccommodationManagement() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -13,6 +22,15 @@ export function AccommodationManagement() {
   const deleteMutation = useDeleteAccommodation();
 
   const bookings = Array.isArray(accommodationsData) ? accommodationsData : accommodationsData?.accommodations || [];
+
+  useEffect(() => {
+    if (!selectedBooking) return;
+    const fresh = bookings.find((b: any) => b.id === selectedBooking.id);
+    if (fresh) {
+      setSelectedBooking((prev: any) => (prev ? { ...prev, ...fresh } : prev));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bookings, selectedBooking?.id]);
 
   const filteredBookings = bookings.filter((booking: any) => {
     const matchesSearch =
@@ -52,16 +70,30 @@ export function AccommodationManagement() {
   };
 
   const handleStatusChange = (id: number, newStatus: string) => {
-    updateStatusMutation.mutate({ id, status: newStatus });
-    if (selectedBooking?.id === id) {
-      setSelectedBooking({ ...selectedBooking, status: newStatus });
-    }
+    updateStatusMutation.mutate(
+      { id, status: newStatus },
+      {
+        onSuccess: () => {
+          toast.success(`Status updated to ${newStatus}`);
+        },
+        onError: (error) => {
+          toast.error(getErrorMessage(error, 'Failed to update status'));
+        },
+      }
+    );
   };
 
   const handleDelete = (id: number) => {
     if (window.confirm('Are you sure you want to delete this booking?')) {
-      deleteMutation.mutate(id);
-      if (selectedBooking?.id === id) setSelectedBooking(null);
+      deleteMutation.mutate(id, {
+        onSuccess: () => {
+          toast.success('Booking deleted successfully');
+          if (selectedBooking?.id === id) setSelectedBooking(null);
+        },
+        onError: (error) => {
+          toast.error(getErrorMessage(error, 'Failed to delete booking'));
+        },
+      });
     }
   };
 
@@ -207,24 +239,49 @@ export function AccommodationManagement() {
                           <div className="text-xs">{booking.local_government}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-2 py-1 text-xs font-medium rounded-full flex items-center space-x-1 w-fit ${getStatusBadge(booking.status)}`}>
-                            {getStatusIcon(booking.status)}
-                            <span className="ml-1 capitalize">{booking.status}</span>
-                          </span>
+                          <div className="flex items-center space-x-2">
+                            <span className={`px-2 py-1 text-xs font-medium rounded-full flex items-center space-x-1 ${getStatusBadge(booking.status)}`}>
+                              {getStatusIcon(booking.status)}
+                              <span className="ml-1 capitalize">{booking.status}</span>
+                            </span>
+                            <select
+                              value={booking.status}
+                              onChange={(e) => handleStatusChange(booking.id, e.target.value)}
+                              disabled={updateStatusMutation.isPending}
+                              title="Update status"
+                              className="text-xs border border-[#E2E8F0] rounded-lg px-2 py-1 bg-white text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#22C55E] focus:border-[#22C55E] disabled:opacity-50 cursor-pointer"
+                            >
+                              <option value="pending">Pending</option>
+                              <option value="confirmed">Confirmed</option>
+                              <option value="cancelled">Cancelled</option>
+                              <option value="completed">Completed</option>
+                            </select>
+                            {updateStatusMutation.isPending &&
+                              updateStatusMutation.variables?.id === booking.id && (
+                                <Loader className="h-3.5 w-3.5 animate-spin text-[#22C55E]" />
+                              )}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end space-x-2">
                             <button
                               onClick={() => setSelectedBooking(booking)}
                               className="text-[#3B82F6] hover:text-[#2563EB] p-1 transition-colors"
+                              title="View booking & update status"
                             >
                               <Eye className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => handleDelete(booking.id)}
-                              className="text-[#EF4444] hover:text-[#DC2626] p-1 transition-colors"
+                              disabled={deleteMutation.isPending}
+                              className="text-[#EF4444] hover:text-[#DC2626] p-1 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title="Delete booking"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              {deleteMutation.isPending && deleteMutation.variables === booking.id ? (
+                                <Loader className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4" />
+                              )}
                             </button>
                           </div>
                         </td>
@@ -261,21 +318,36 @@ export function AccommodationManagement() {
               <div>
                 <label className="text-xs font-medium text-[#6B7280] uppercase mb-2 block">Update Status</label>
                 <div className="flex space-x-2">
-                  {['pending', 'confirmed', 'cancelled', 'completed'].map((status) => (
-                    <button
-                      key={status}
-                      onClick={() => handleStatusChange(selectedBooking.id, status)}
-                      disabled={selectedBooking.status === status}
-                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize ${
-                        selectedBooking.status === status
-                          ? `${getStatusBadge(status)} cursor-default`
-                          : 'bg-[#F8FAFC] text-[#6B7280] hover:bg-[#E2E8F0]'
-                      }`}
-                    >
-                      {status}
-                    </button>
-                  ))}
+                  {['pending', 'confirmed', 'cancelled', 'completed'].map((status) => {
+                    const isCurrent = selectedBooking.status === status;
+                    const isUpdating =
+                      updateStatusMutation.isPending &&
+                      updateStatusMutation.variables?.status === status;
+                    return (
+                      <button
+                        key={status}
+                        onClick={() => handleStatusChange(selectedBooking.id, status)}
+                        disabled={isCurrent || updateStatusMutation.isPending}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors capitalize flex items-center space-x-1 ${
+                          isCurrent
+                            ? `${getStatusBadge(status)} cursor-default`
+                            : 'bg-[#F8FAFC] text-[#6B7280] hover:bg-[#E2E8F0] disabled:opacity-50 disabled:cursor-not-allowed'
+                        }`}
+                      >
+                        {isUpdating && (
+                          <Loader className="h-3.5 w-3.5 animate-spin" />
+                        )}
+                        <span>{status}</span>
+                      </button>
+                    );
+                  })}
                 </div>
+                {updateStatusMutation.isPending && (
+                  <p className="mt-2 text-xs text-[#6B7280] flex items-center space-x-1">
+                    <Loader className="h-3 w-3 animate-spin" />
+                    <span>Saving status...</span>
+                  </p>
+                )}
               </div>
 
               {/* Booking Info Grid */}
@@ -335,10 +407,19 @@ export function AccommodationManagement() {
               <div className="pt-4 border-t border-[#E2E8F0]">
                 <button
                   onClick={() => handleDelete(selectedBooking.id)}
-                  className="bg-[#EF4444] text-white px-4 py-2 rounded-lg hover:bg-[#DC2626] flex items-center space-x-2 text-sm transition-colors"
+                  disabled={deleteMutation.isPending}
+                  className="bg-[#EF4444] text-white px-4 py-2 rounded-lg hover:bg-[#DC2626] flex items-center space-x-2 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Trash2 className="h-4 w-4" />
-                  <span>Delete Booking</span>
+                  {deleteMutation.isPending && deleteMutation.variables === selectedBooking.id ? (
+                    <Loader className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-4 w-4" />
+                  )}
+                  <span>
+                    {deleteMutation.isPending && deleteMutation.variables === selectedBooking.id
+                      ? 'Deleting...'
+                      : 'Delete Booking'}
+                  </span>
                 </button>
               </div>
             </div>
