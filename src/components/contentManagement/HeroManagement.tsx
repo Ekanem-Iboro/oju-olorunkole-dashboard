@@ -3,6 +3,7 @@ import { Plus, Edit2, Trash2, Eye, Loader, Image, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useGetHeroSlides, useGetHeroSlide } from '../../../api/query';
 import { useDeleteHeroSlide, useAddHeroSlide, useUpdateHeroSlide, useUploadImage } from '../../../api/mutate';
+import { ConfirmModal } from '../ConfirmModal';
 
 interface HeroSlide {
   id: number;
@@ -62,6 +63,7 @@ export function HeroManager() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState('');
   const [uploadedImageUrl, setUploadedImageUrl] = useState('');
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
   const { data: slidesData, isLoading, refetch } = useGetHeroSlides();
   const { data: editSlide } = useGetHeroSlide(editSlideId ?? 0);
@@ -153,18 +155,7 @@ export function HeroManager() {
   };
 
   const handleDelete = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this slide?')) {
-      deleteMutation.mutate(id, {
-        onSuccess: () => {
-          toast.success('Slide deleted successfully');
-          setSelectedSlide(null);
-          refetch();
-        },
-        onError: (error) => {
-          toast.error(getErrorMessage(error, 'Failed to delete slide'));
-        },
-      });
-    }
+    setDeleteTargetId(id);
   };
 
   const handleAddSlide = async () => {
@@ -346,6 +337,29 @@ export function HeroManager() {
 
   return (
     <div className="space-y-6">
+      <ConfirmModal
+        isOpen={deleteTargetId !== null}
+        message="Are you sure you want to delete this slide? This action cannot be undone."
+        isPending={deleteMutation.isPending}
+        onConfirm={() => {
+          if (deleteTargetId === null) return;
+          deleteMutation.mutate(deleteTargetId, {
+            onSuccess: () => {
+              toast.success('Slide deleted successfully');
+              setSelectedSlide(null);
+              setDeleteTargetId(null);
+              refetch();
+            },
+            onError: (error) => {
+              toast.error(getErrorMessage(error, 'Failed to delete slide'));
+              setDeleteTargetId(null);
+            },
+          });
+        }}
+        onCancel={() => {
+          if (!deleteMutation.isPending) setDeleteTargetId(null);
+        }}
+      />
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-[#374151]">Hero Carousel</h2>
         <button

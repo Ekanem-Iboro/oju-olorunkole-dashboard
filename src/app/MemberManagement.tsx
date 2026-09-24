@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { Search, UserPlus, Edit, Trash2, Mail, Loader, X } from 'lucide-react';
 import { useGetMembers } from '../../api/query';
 import { useDeleteMember } from '../../api/mutate';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 export function MemberManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
   const { data: membersData, isLoading } = useGetMembers();
   const deleteMutation = useDeleteMember();
@@ -36,11 +38,7 @@ export function MemberManagement() {
   };
 
   const handleDelete = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this member?')) {
-      deleteMutation.mutate(id, {
-        onSuccess: () => setSelectedMember(null),
-      });
-    }
+    setDeleteTargetId(id);
   };
 
   const getMemberName = (member: any) => {
@@ -59,6 +57,24 @@ export function MemberManagement() {
 
   return (
     <div className="space-y-6">
+      <ConfirmModal
+        isOpen={deleteTargetId !== null}
+        message="Are you sure you want to delete this member? This action cannot be undone."
+        isPending={deleteMutation.isPending}
+        onConfirm={() => {
+          if (deleteTargetId === null) return;
+          deleteMutation.mutate(deleteTargetId, {
+            onSuccess: () => {
+              setSelectedMember(null);
+              setDeleteTargetId(null);
+            },
+            onError: () => setDeleteTargetId(null),
+          });
+        }}
+        onCancel={() => {
+          if (!deleteMutation.isPending) setDeleteTargetId(null);
+        }}
+      />
       <div>
         <h1 className="text-2xl font-semibold text-[#374151] mb-2">Member Management</h1>
         <p className="text-[#6B7280]">Manage church members, registrations, and member analytics.</p>

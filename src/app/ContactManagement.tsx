@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { Search, Mail, MailOpen, Trash2, Eye, Filter, Loader } from 'lucide-react';
 import { useGetContacts } from '../../api/query';
 import { useMarkContactRead, useDeleteContact } from '../../api/mutate';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 export function ContactManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPurpose, setFilterPurpose] = useState('all');
   const [selectedContact, setSelectedContact] = useState<any>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
   const { data: contactsData, isLoading } = useGetContacts();
   const markReadMutation = useMarkContactRead();
@@ -61,13 +63,7 @@ export function ContactManagement() {
   };
 
   const handleDelete = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this contact message?')) {
-      deleteMutation.mutate(id, {
-        onSuccess: () => {
-          if (selectedContact?.id === id) setSelectedContact(null);
-        },
-      });
-    }
+    setDeleteTargetId(id);
   };
 
   if (isLoading) {
@@ -80,6 +76,25 @@ export function ContactManagement() {
 
   return (
     <div className="space-y-6">
+      <ConfirmModal
+        isOpen={deleteTargetId !== null}
+        message="Are you sure you want to delete this contact message? This action cannot be undone."
+        isPending={deleteMutation.isPending}
+        onConfirm={() => {
+          if (deleteTargetId === null) return;
+          const targetId = deleteTargetId;
+          deleteMutation.mutate(targetId, {
+            onSuccess: () => {
+              if (selectedContact?.id === targetId) setSelectedContact(null);
+              setDeleteTargetId(null);
+            },
+            onError: () => setDeleteTargetId(null),
+          });
+        }}
+        onCancel={() => {
+          if (!deleteMutation.isPending) setDeleteTargetId(null);
+        }}
+      />
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-semibold text-[#374151] mb-2">Contact Management</h1>

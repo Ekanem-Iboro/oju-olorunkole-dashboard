@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { CheckCircle, X, Star, Eye, Loader } from 'lucide-react';
 import { useGetTestimonials, useGetPendingTestimonials } from '../../api/query';
 import { useApproveTestimonial, useRejectTestimonial, useToggleFeaturedTestimonial, useDeleteTestimonial } from '../../api/mutate';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 export function TestimonyManagement() {
   const [activeTab, setActiveTab] = useState('pending');
   const [selectedTestimony, setSelectedTestimony] = useState<any>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
   const { data: testimonialsData, isLoading: loadingAll } = useGetTestimonials();
   const { data: pendingData, isLoading: loadingPending } = useGetPendingTestimonials();
@@ -50,11 +52,7 @@ export function TestimonyManagement() {
   };
 
   const handleDelete = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this testimony?')) {
-      deleteMutation.mutate(id, {
-        onSuccess: () => setSelectedTestimony(null),
-      });
-    }
+    setDeleteTargetId(id);
   };
 
   const isLoading = loadingAll || loadingPending;
@@ -318,6 +316,25 @@ export function TestimonyManagement() {
   return (
     <div className="space-y-6">
       {renderDetailModal()}
+
+      <ConfirmModal
+        isOpen={deleteTargetId !== null}
+        message="Are you sure you want to delete this testimony? This action cannot be undone."
+        isPending={deleteMutation.isPending}
+        onConfirm={() => {
+          if (deleteTargetId === null) return;
+          deleteMutation.mutate(deleteTargetId, {
+            onSuccess: () => {
+              setSelectedTestimony(null);
+              setDeleteTargetId(null);
+            },
+            onError: () => setDeleteTargetId(null),
+          });
+        }}
+        onCancel={() => {
+          if (!deleteMutation.isPending) setDeleteTargetId(null);
+        }}
+      />
 
       <div>
         <h1 className="text-2xl font-semibold text-[#374151] mb-2">Testimony Management</h1>

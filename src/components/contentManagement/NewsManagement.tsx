@@ -4,6 +4,7 @@ import { useGetNews } from '../../../api/query';
 import { useDeleteNews } from '../../../api/mutate';
 import { AddNewsModal } from './AddNewsModal';
 import { UpdateNewsModal } from './UpdateNewsModal';
+import { ConfirmModal } from '../ConfirmModal';
 
 interface NewsRow {
     id: number;
@@ -22,6 +23,7 @@ export default function NewsManagement() {
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
     const [selectedNewsId, setSelectedNewsId] = useState<number | null>(null);
     const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title'>('newest');
+    const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
     const { data: newsData, isLoading, refetch } = useGetNews();
     const {
@@ -31,9 +33,7 @@ export default function NewsManagement() {
     } = useDeleteNews();
 
     const handleDeleteNews = (id: number) => {
-        if (window.confirm('Are you sure you want to delete this news article?')) {
-            deleteNews(id);
-        }
+        setDeleteTargetId(id);
     };
 
     const handleEditNews = (id: number) => {
@@ -97,6 +97,20 @@ export default function NewsManagement() {
 
     return (
         <div className="space-y-6">
+            <ConfirmModal
+                isOpen={deleteTargetId !== null}
+                message="Are you sure you want to delete this news article? This action cannot be undone."
+                isPending={isDeleting}
+                onConfirm={() => {
+                    if (deleteTargetId === null) return;
+                    deleteNews(deleteTargetId, {
+                        onSettled: () => setDeleteTargetId(null),
+                    });
+                }}
+                onCancel={() => {
+                    if (!isDeleting) setDeleteTargetId(null);
+                }}
+            />
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-[#374151]">News</h2>
                 <button

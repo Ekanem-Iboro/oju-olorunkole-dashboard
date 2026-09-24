@@ -5,12 +5,14 @@ import { useGetPrograms } from '../../../api/query';
 import { useDeleteProgram } from '../../../api/mutate';
 import { AddProgramModal } from './AddProgramModal';
 import { UpdateProgramModal } from './UpdateProgramModal';
+import { ConfirmModal } from '../ConfirmModal';
 
 export default function ProgramEventPage() {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
     const [selectedProgramId, setSelectedProgramId] = useState<number | null>(null);
     const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'title'>('newest');
+    const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
     const { data: programs, isLoading, refetch } = useGetPrograms();
     const {
@@ -20,7 +22,7 @@ export default function ProgramEventPage() {
     } = useDeleteProgram();
 
     const handleDeleteProgram = (programId: number) => {
-        deleteProgram(programId); // Pass the ID directly here
+        setDeleteTargetId(programId);
     };
 
 
@@ -103,6 +105,20 @@ export default function ProgramEventPage() {
 
     return (
         <div className="p-6 bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] min-h-screen">
+            <ConfirmModal
+                isOpen={deleteTargetId !== null}
+                message="Are you sure you want to delete this program? This action cannot be undone."
+                isPending={isDeleting}
+                onConfirm={() => {
+                    if (deleteTargetId === null) return;
+                    deleteProgram(deleteTargetId, {
+                        onSettled: () => setDeleteTargetId(null),
+                    });
+                }}
+                onCancel={() => {
+                    if (!isDeleting) setDeleteTargetId(null);
+                }}
+            />
             <div className="flex items-center justify-between mb-8">
                 <div>
                     <h1 className="text-3xl font-bold text-[#374151]">Programs & Events</h1>

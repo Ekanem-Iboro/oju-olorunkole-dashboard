@@ -3,6 +3,7 @@ import { Search, Bed, CheckCircle, XCircle, Clock, Trash2, Eye, Loader } from 'l
 import toast from 'react-hot-toast';
 import { useGetAccommodations } from '../../api/query';
 import { useUpdateAccommodationStatus, useDeleteAccommodation } from '../../api/mutate';
+import { ConfirmModal } from '../components/ConfirmModal';
 
 const getErrorMessage = (err: unknown, fallback: string) => {
   if (err && typeof err === 'object' && 'response' in err) {
@@ -16,6 +17,7 @@ export function AccommodationManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
   const { data: accommodationsData, isLoading } = useGetAccommodations();
   const updateStatusMutation = useUpdateAccommodationStatus();
@@ -84,17 +86,7 @@ export function AccommodationManagement() {
   };
 
   const handleDelete = (id: number) => {
-    if (window.confirm('Are you sure you want to delete this booking?')) {
-      deleteMutation.mutate(id, {
-        onSuccess: () => {
-          toast.success('Booking deleted successfully');
-          if (selectedBooking?.id === id) setSelectedBooking(null);
-        },
-        onError: (error) => {
-          toast.error(getErrorMessage(error, 'Failed to delete booking'));
-        },
-      });
-    }
+    setDeleteTargetId(id);
   };
 
   const pendingCount = bookings.filter((b: any) => b.status === 'pending').length;
@@ -110,6 +102,29 @@ export function AccommodationManagement() {
 
   return (
     <div className="space-y-6">
+      <ConfirmModal
+        isOpen={deleteTargetId !== null}
+        message="Are you sure you want to delete this booking? This action cannot be undone."
+        isPending={deleteMutation.isPending}
+        onConfirm={() => {
+          if (deleteTargetId === null) return;
+          const targetId = deleteTargetId;
+          deleteMutation.mutate(targetId, {
+            onSuccess: () => {
+              toast.success('Booking deleted successfully');
+              if (selectedBooking?.id === targetId) setSelectedBooking(null);
+              setDeleteTargetId(null);
+            },
+            onError: (error) => {
+              toast.error(getErrorMessage(error, 'Failed to delete booking'));
+              setDeleteTargetId(null);
+            },
+          });
+        }}
+        onCancel={() => {
+          if (!deleteMutation.isPending) setDeleteTargetId(null);
+        }}
+      />
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-semibold text-[#374151] mb-2">Accommodation Management</h1>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, Eye, Loader, Image } from 'lucide-react';
 import { useGetBanners, useGetBanner } from '../../../api/query';
 import { useDeleteBanner, useAddBanner, useUpdateBanner, useUploadImage } from '../../../api/mutate';
+import { ConfirmModal } from '../ConfirmModal';
 
 interface BannerFormData {
     title: string;
@@ -40,6 +41,7 @@ export function BannerManager() {
     const [form, setForm] = useState<BannerFormData>(emptyForm);
     const [imagePreview, setImagePreview] = useState<string>('');
     const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
+    const [deleteTargetId, setDeleteTargetId] = useState<number | null>(null);
 
     const { data: bannersData, isLoading } = useGetBanners();
     const { data: editBanner } = useGetBanner(editBannerId ?? 0);
@@ -68,10 +70,7 @@ export function BannerManager() {
     }, [isEditModalOpen, editBanner]);
 
     const handleDelete = (id: number) => {
-        if (window.confirm('Are you sure you want to delete this banner?')) {
-            deleteMutation.mutate(id);
-            setSelectedBanner(null);
-        }
+        setDeleteTargetId(id);
     };
 
     const openAddModal = () => {
@@ -259,6 +258,24 @@ export function BannerManager() {
 
     return (
         <div className="space-y-6">
+            <ConfirmModal
+                isOpen={deleteTargetId !== null}
+                message="Are you sure you want to delete this banner? This action cannot be undone."
+                isPending={deleteMutation.isPending}
+                onConfirm={() => {
+                    if (deleteTargetId === null) return;
+                    deleteMutation.mutate(deleteTargetId, {
+                        onSuccess: () => {
+                            setSelectedBanner(null);
+                            setDeleteTargetId(null);
+                        },
+                        onError: () => setDeleteTargetId(null),
+                    });
+                }}
+                onCancel={() => {
+                    if (!deleteMutation.isPending) setDeleteTargetId(null);
+                }}
+            />
             <div className="flex items-center justify-between">
                 <h2 className="text-xl font-semibold text-[#374151]">Banners</h2>
                 <button

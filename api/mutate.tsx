@@ -154,6 +154,7 @@ export const useDeleteTestimonial = () => {
         mutationFn: deleteTestimonial,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["testimonials"] });
+            queryClient.invalidateQueries({ queryKey: ["pendingTestimonials"] });
         },
     });
 };
@@ -197,6 +198,7 @@ export const useAddDonation = () => {
         mutationFn: (data: any) => addDonation(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["donations"] });
+            queryClient.invalidateQueries({ queryKey: ["donationStats"] });
         },
     });
 }
@@ -207,6 +209,7 @@ export const useUpdateDonation = () => {
         mutationFn: ({ id, data }: { id: number; data: any }) => updateDonation(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["donations"] });
+            queryClient.invalidateQueries({ queryKey: ["donationStats"] });
         },
     });
 };
@@ -217,6 +220,7 @@ export const useUpdateDonationStatus = () => {
         mutationFn: ({ id, status }: { id: number; status: string }) => updateDonationStatus(id, status),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["donations"] });
+            queryClient.invalidateQueries({ queryKey: ["donationStats"] });
         },
     });
 };
@@ -227,6 +231,7 @@ export const useDeleteDonation = () => {
         mutationFn: deleteDonation,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["donations"] });
+            queryClient.invalidateQueries({ queryKey: ["donationStats"] });
         },
     });
 };
